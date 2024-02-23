@@ -1,0 +1,257 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat{\fonttbl{\f0\fnil\fcharset0 Courier New;}}
+{\colortbl ;\red0\green0\blue255;\red255\green0\blue0;}
+{\*\generator Riched20 10.0.22621}\viewkind4\uc1 
+\pard\f0\fs22\lang1033 /* Welcome to the SQL mini project. You will carry out this project partly in\par
+the PHPMyAdmin interface, and partly in Jupyter via a Python connection.\par
+\par
+This is Tier 1 of the case study, which means that there'll be more guidance for you about how to \par
+setup your local SQLite connection in PART 2 of the case study. \par
+\par
+The questions in the case study are exactly the same as with Tier 2. \par
+\par
+PART 1: PHPMyAdmin\par
+You will complete questions 1-9 below in the PHPMyAdmin interface. \par
+Log in by pasting the following URL into your browser, and\par
+using the following Username and Password:\par
+\par
+URL: {{\field{\*\fldinst{HYPERLINK https://sql.springboard.com/ }}{\fldrslt{https://sql.springboard.com/\ul0\cf0}}}}\f0\fs22\par
+Username: student\par
+Password: learn_sql@springboard\par
+\par
+The data you need is in the "country_club" database. This database\par
+contains 3 tables:\par
+    i) the "Bookings" table,\par
+    ii) the "Facilities" table, and\par
+    iii) the "Members" table.\par
+\par
+In this case study, you'll be asked a series of questions. You can\par
+solve them using the platform, but for the final deliverable,\par
+paste the code for each solution into this script, and upload it\par
+to your GitHub.\par
+\par
+Before starting with the questions, feel free to take your time,\par
+exploring the data, and getting acquainted with the 3 tables. */\par
+\par
+\par
+/* QUESTIONS \par
+/* Q1: Some of the facilities charge a fee to members, but some do not.\par
+Write a SQL query to produce a list of the names of the facilities that do. */\par
+\par
+\b SELECT name FROM Facilities\par
+WHERE membercost > 0;\par
+\par
+\tab A: Tennis Court 1, Tennis Court 2, Massage Room 1, Massage Room 2, Squash Court\par
+\par
+\b0\par
+/* Q2: How many facilities do not charge a fee to members? */\par
+\par
+\b SELECT COUNT(facid)\par
+FROM Facilities\par
+WHERE membercost = 0;\par
+\par
+\tab A: 4\b0\par
+\par
+\par
+/* Q3: Write an SQL query to show a list of facilities that charge a fee to members,\par
+where the fee is less than 20% of the facility's monthly maintenance cost.\par
+Return the facid, facility name, member cost, and monthly maintenance of the\par
+facilities in question. */\par
+\highlight2\par
+\highlight0\b SELECT \par
+\tab facid,\par
+\tab name,\par
+\tab membercost,\par
+\tab monthlymaintenance\par
+FROM (\par
+    SELECT\par
+    \tab facid,\par
+\tab\tab name,\par
+\tab\tab membercost,\par
+\tab\tab monthlymaintenance,\par
+\tab\tab monthlymaintenance * 0.2 AS 20perc\par
+\tab FROM Facilities) AS temp\par
+WHERE membercost > 0\par
+\tab AND membercost < 0.2 * monthlymaintenance;\par
+\par
+\b0\par
+/* Q4: Write an SQL query to retrieve the details of facilities with ID 1 and 5.\par
+Try writing the query without using the OR operator. */\par
+\par
+\b SELECT * FROM Facilities\par
+WHERE facid IN (1, 5);\par
+\b0\par
+\par
+/* Q5: Produce a list of facilities, with each labelled as\par
+'cheap' or 'expensive', depending on if their monthly maintenance cost is\par
+more than $100. Return the name and monthly maintenance of the facilities\par
+in question. */\par
+\par
+\b SELECT\par
+\tab name,\par
+\tab monthlymaintenance,\par
+\tab CASE WHEN monthlymaintenance > 100 THEN 'expensive'\par
+\tab ELSE 'cheap' END AS facilitycost\par
+FROM Facilities;\b0\par
+\par
+\par
+/* Q6: You'd like to get the first and last name of the last member(s)\par
+who signed up. Try not to use the LIMIT clause for your solution. */\par
+\par
+\b SELECT firstname, surname\par
+FROM Members\par
+WHERE joindate IN (\par
+    SELECT MAX(joindate)\par
+    FROM Members);\par
+\par
+\tab A: Darren Smith\b0\par
+\par
+\par
+/* Q7: Produce a list of all members who have used a tennis court.\par
+Include in your output the name of the court, and the name of the member\par
+formatted as a single column. Ensure no duplicate data, and order by\par
+the member name. */\par
+\par
+\b SELECT DISTINCT CONCAT_WS(m.firstname, '', m.surname) AS member_fullname, f.name AS facility_name\par
+FROM Bookings AS b\par
+INNER JOIN Facilities AS f\par
+\tab ON b.facid = f.facid\par
+INNER JOIN Members AS m\par
+\tab ON b.memid = m.memid\par
+WHERE\par
+\tab m.firstname != 'GUEST'\par
+\tab AND f.name LIKE 'Tennis%'\par
+ORDER BY member_fullname;\par
+\par
+\b0\par
+/* Q8: Produce a list of bookings on the day of 2012-09-14 which\par
+will cost the member (or guest) more than $30. Remember that guests have\par
+different costs to members (the listed costs are per half-hour 'slot'), and\par
+the guest user's ID is always 0. Include in your output the name of the\par
+facility, the name of the member formatted as a single column, and the cost.\par
+Order by descending cost, and do not use any subqueries. */\par
+\par
+\b SELECT\par
+\tab b.bookid,\par
+\tab f.name AS facility,\par
+\tab CASE WHEN m.memid != 0 THEN CONCAT_WS(m.firstname,'',m.surname)\par
+\tab ELSE 'Guest' END AS name,\par
+\tab CASE WHEN m.memid != 0 AND f.membercost > 30 THEN f.membercost\par
+\tab\tab WHEN m.memid = 0 AND f.guestcost > 30 THEN f.guestcost,\par
+\tab\tab END AS cost,\par
+\tab b.starttime\par
+FROM Bookings AS b\par
+LEFT JOIN Members AS m\par
+\tab ON b.memid = m.memid\par
+LEFT JOIN Facilities AS f\par
+\tab ON b.facid = f.facid\par
+WHERE ((m.memid != 0 AND f.membercost > 30) OR (m.memid = 0 AND f.guestcost > 30))\par
+\tab AND starttime LIKE '2012-09-14%'\par
+ORDER BY cost DESC\b0\par
+\par
+/* Q9: This time, produce the same result as in Q8, but using a subquery. */\par
+\par
+\b SELECT f.name AS facility_name,\par
+\tab (SELECT CONCAT_WS(m.firstname,'',m.surname)\par
+\tab FROM Members\par
+\tab WHERE memid != 0) AS name,\par
+FROM Bookings AS b\par
+LEFT JOIN Facilities AS f\par
+\tab ON b.facid = f.facid\par
+LEFT JOIN Members AS m\par
+\tab ON b.memid = m.memid\par
+WHERE starttime LIKE '2012-09-14%'\par
+\par
+(missing cost, joins not functioning)\b0\par
+\par
+\par
+/* PART 2: SQLite\par
+/* We now want you to jump over to a local instance of the database on your machine. \par
+\par
+Copy and paste the LocalSQLConnection.py script into an empty Jupyter notebook, and run it. \par
+\par
+Make sure that the SQLFiles folder containing thes files is in your working directory, and\par
+that you haven't changed the name of the .db file from 'sqlite\\db\\pythonsqlite'.\par
+\par
+You should see the output from the initial query 'SELECT * FROM FACILITIES'.\par
+\par
+Complete the remaining tasks in the Jupyter interface. If you struggle, feel free to go back\par
+to the PHPMyAdmin interface as and when you need to. \par
+\par
+You'll need to paste your query into value of the 'query1' variable and run the code block again to get an output.\par
+ \par
+QUESTIONS:\par
+/* Q10: Produce a list of facilities with a total revenue less than 1000.\par
+The output of facility name and total revenue, sorted by revenue. Remember\par
+that there's a different cost for guests and members! */\par
+\par
+\b         WITH rev AS(\par
+            SELECT\par
+                b.facid,\par
+                f.name, \par
+                CASE WHEN b.memid = 0 THEN f.guestcost\par
+                    ELSE f.membercost END AS price\par
+            FROM Bookings AS b\par
+            LEFT JOIN Facilities AS f\par
+                ON b.facid = f.facid)\par
+        SELECT\par
+            name AS facility,\par
+            SUM(price) AS revenue\par
+        FROM rev\par
+        GROUP BY facid\par
+        HAVING SUM(price) < 1000\par
+        ORDER BY revenue;\b0\par
+\par
+\par
+/* Q11: Produce a report of members and who recommended them in alphabetic surname,firstname order */\par
+\par
+\b     WITH recommenders AS (\par
+        SELECT memid,\par
+            firstname,\par
+            surname\par
+        FROM Members)\par
+    SELECT\par
+        m.surname||', '||m.firstname AS member,\par
+        recs.surname||', '||recs.firstname AS recommended_by\par
+    FROM Members AS m\par
+    INNER JOIN recommenders AS recs\par
+        ON m.recommendedby = recs.memid\par
+    ORDER BY member;\b0\par
+\par
+\par
+/* Q12: Find the facilities with their usage by member, but not guests */\par
+\par
+\b         SELECT\par
+            m.firstname||' '||m.surname AS member, \par
+            f.name AS facility,\par
+            SUM(\par
+                CASE WHEN f.facid IN (\par
+                    SELECT facid\par
+                    FROM Bookings)\par
+                    THEN 1 ELSE 0 END) AS uses\par
+        FROM Bookings AS b\par
+        LEFT JOIN Facilities AS f\par
+            ON b.facid = f.facid\par
+        LEFT JOIN Members AS m\par
+            ON b.memid = m.memid\par
+        GROUP BY b.memid, f.facid\par
+        HAVING b.memid != 0\b0\par
+\par
+\par
+/* Q13: Find the facilities usage by month, but not guests */\par
+\par
+\b         SELECT\par
+            strftime('%m', starttime) AS month, \par
+            f.facid,\par
+            SUM(\par
+                CASE WHEN f.facid IN (\par
+                    SELECT facid\par
+                    FROM Bookings) THEN 1 ELSE 0 END) AS uses\par
+        FROM Bookings AS b\par
+        LEFT JOIN Facilities AS f\par
+        ON b.facid = f.facid\par
+        GROUP BY strftime('%m', starttime), f.facid\par
+        HAVING b.memid != 0;\b0\par
+\par
+\par
+}
+ 
